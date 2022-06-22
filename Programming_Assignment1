@@ -2,13 +2,55 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <string.h>
+#include <vector>
+#include <cmath>
+
+#define d 256
+#define q 13
 
 using namespace std;
 
+struct rkvalues {
+    int p = 0;          // hash for pattern
+    int t = 0;          // hash for text
+    int h = 1;
+    string pat, text;
+    vector<int> results;
+};
+
+void * patSearch(void * void_ptr) {
+    struct rkvalues * pos_ptr = (struct rkvalues *) void_ptr;
+    return NULL;
+}
 
 
 int main() {
+    int M;
+    string text;
+    string pattern;
+    vector<string> patterns;
+    getline(cin, text);
+    cin >> M;
+    for(int i = 0; i < M; i++) {
+        cin >> pattern;
+        patterns.push_back(pattern);
+    }
 
+    struct rkvalues rkpats[M];
+    pthread_t tid[M];
 
+    for(int i = 0; i < M; i++) {
+        rkpats[i].h = ((int) pow(d,patterns[i].size()-1)) % q;
+        if(rkpats[i].h < 0) {
+            rkpats[i].h += q;
+        } 
+        rkpats[i].text = text;
+        rkpats[i].pat = patterns[i];
+        if(pthread_create(&tid[i], NULL, patSearch, &rkpats[i])) {
+            cout << "Error creating thread" << endl;
+            return 1;
+        }
+    }
     return 0;
 }
