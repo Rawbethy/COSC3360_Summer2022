@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <cstring>
 #include <vector>
 #include <cmath>
 
@@ -20,15 +21,16 @@ struct rkvalues {
 };
 
 void * patSearch(void * void_ptr) {
-    struct rkvalues * pos_ptr = (struct rkvalues *) void_ptr;
+
+    struct rkvalues * rkptr = (struct rkvalues *) void_ptr;
+    cout << rkptr->pat << endl;
     return NULL;
 }
 
 
 int main() {
     int M;
-    string text;
-    string pattern;
+    string text, pattern;
     vector<string> patterns;
     getline(cin, text);
     cin >> M;
@@ -51,6 +53,10 @@ int main() {
             cout << "Error creating thread" << endl;
             return 1;
         }
+    }
+
+    for(int i = 0; i < M; i++) {
+        pthread_join(tid[i], NULL);
     }
     return 0;
 }
