@@ -26,8 +26,8 @@ void * patSearch(void * void_ptr) {
 
     struct rkvalues * rkptr = (struct rkvalues *) void_ptr;
     rkptr->size = rkptr->pat.size();
-    char pat[50];
-    char text[100];
+    char pat[rkptr->size];
+    char text[rkptr->text.size()];
     strcpy(pat, rkptr->pat.c_str());
     strcpy(text, rkptr->text.c_str());
     for(int i = 0; i < rkptr->size; i++) {
@@ -45,8 +45,7 @@ void * patSearch(void * void_ptr) {
                 pos = j;
             }
             if(pos == rkptr->size) {
-                rkptr->results.push_back(pos);
-                cout << "Pattern \"" << rkptr->pat << "\" in the input text at position " << i << endl;
+                rkptr->results.push_back(i);
             }
         }
         if(i < rkptr->N-rkptr->size) {
@@ -56,10 +55,6 @@ void * patSearch(void * void_ptr) {
             }
         }
     }
-    if(rkptr->results.size() == 0) {
-        cout << "Pattern \"" << rkptr->pat << "\" not found" << endl;
-    }
-    cout << endl;
     return NULL;
 }
 
@@ -91,8 +86,22 @@ int main() {
             cout << "Error creating thread" << endl;
             return 1;
         }
+    }
+    for(int i = 0; i < M; i++) {
         pthread_join(tid[i], NULL);
     }
 
+    cout << "SEARCH RESULTS: " << endl << endl;
+    for(int i = 0; i < M; i++) {
+        if(rkpats[i].results.size() != 0) {
+            for(int j = 0; j < rkpats[i].results.size(); j++) {
+                cout << "Pattern \"" << rkpats[i].pat << "\" in the input text at position " << rkpats[i].results[j] << endl;
+            }
+        }
+        else {
+            cout << "Pattern \"" << rkpats[i].pat << "\" not found" << endl;
+        }
+        cout << endl;
+    }
     return 0;
 }
