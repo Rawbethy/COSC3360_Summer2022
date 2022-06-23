@@ -8,11 +8,13 @@
 #include <cmath>
 
 #define d 256
-#define q 13
+#define q 17
 
 using namespace std;
 
 struct rkvalues {
+    int N = 0;
+    int size = 0;
     int p = 0;          // hash for pattern
     int t = 0;          // hash for text
     int h = 1;
@@ -23,7 +25,41 @@ struct rkvalues {
 void * patSearch(void * void_ptr) {
 
     struct rkvalues * rkptr = (struct rkvalues *) void_ptr;
-    cout << rkptr->pat << endl;
+    rkptr->size = rkptr->pat.size();
+    char pat[50];
+    char text[100];
+    strcpy(pat, rkptr->pat.c_str());
+    strcpy(text, rkptr->text.c_str());
+    for(int i = 0; i < rkptr->size; i++) {
+        rkptr->p = (d*rkptr->p + (int) pat[i]) % q;
+        rkptr->t = (d*rkptr->t + (int) text[i]) % q;
+    }
+    for(int i = 0; i <= rkptr->N - rkptr->size; i++) {
+        if( rkptr->p == rkptr->t) {
+            int pos;
+            for(int j = 0; j <= rkptr->size; j++) {
+                if(text[i+j] != pat[j]) {
+                    pos = j;
+                    break;
+                }
+                pos = j;
+            }
+            if(pos == rkptr->size) {
+                rkptr->results.push_back(pos);
+                cout << "Pattern \"" << rkptr->pat << "\" in the input text at position " << i << endl;
+            }
+        }
+        if(i < rkptr->N-rkptr->size) {
+            rkptr->t = (d*(rkptr->t - (int)text[i]*rkptr->h) + (int)text[i+rkptr->size])%q;
+            if(rkptr->t < 0) {
+                rkptr->t = (rkptr->t + q);
+            }
+        }
+    }
+    if(rkptr->results.size() == 0) {
+        cout << "Pattern \"" << rkptr->pat << "\" not found" << endl;
+    }
+    cout << endl;
     return NULL;
 }
 
@@ -42,21 +78,21 @@ int main() {
     struct rkvalues rkpats[M];
     pthread_t tid[M];
 
+
     for(int i = 0; i < M; i++) {
         rkpats[i].h = ((int) pow(d,patterns[i].size()-1)) % q;
         if(rkpats[i].h < 0) {
             rkpats[i].h += q;
         } 
+        rkpats[i].N = text.size();
         rkpats[i].text = text;
         rkpats[i].pat = patterns[i];
         if(pthread_create(&tid[i], NULL, patSearch, &rkpats[i])) {
             cout << "Error creating thread" << endl;
             return 1;
         }
-    }
-
-    for(int i = 0; i < M; i++) {
         pthread_join(tid[i], NULL);
     }
+
     return 0;
 }
