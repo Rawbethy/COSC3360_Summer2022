@@ -1,0 +1,120 @@
+#include <iostream>
+#include <stdio.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <string.h>
+#include <cstring>
+#include <vector>
+#include <cmath>
+
+#define d 256
+#define q 17
+
+struct rkvalues {
+    int M = 0;
+    int N = 0;
+    int size = 0;
+    int p = 0;          // hash for pattern
+    int t = 0;          // hash for text
+    int h = 1;
+    int * turn;
+    pthread_mutex_t * mutex;
+    pthread_cond_t * condM;
+    std::string pat, text;
+};
+
+void * patSearch(void * void_ptr) {
+
+    pthread_mutex_lock(((struct rkvalues *) void_ptr)->mutex);
+    struct rkvalues * rkptr = (struct rkvalues *) void_ptr;
+    pthread_mutex_unlock(rkptr->mutex);
+    std::vector<int> results;
+    rkptr->size = rkptr->pat.size();
+    char pat[rkptr->size];
+    char text[rkptr->text.size()];
+    strcpy(pat, rkptr->pat.c_str());
+    strcpy(text, rkptr->text.c_str());
+    for(int i = 0; i < rkptr->size; i++) {
+        rkptr->p = (d*rkptr->p + (int) pat[i]) % q;
+        rkptr->t = (d*rkptr->t + (int) text[i]) % q;
+    }
+    for(int i = 0; i <= rkptr->N - rkptr->size; i++) {
+        if( rkptr->p == rkptr->t) {
+            int pos;
+            for(int j = 0; j <= rkptr->size; j++) {
+                if(text[i+j] != pat[j]) {
+                    pos = j;
+                    break;
+                }
+                pos = j;
+            }
+            if(pos == rkptr->size) {
+                results.push_back(i);
+            }
+        }
+        if(i < rkptr->N-rkptr->size) {
+            rkptr->t = (d*(rkptr->t - (int)text[i]*rkptr->h) + (int)text[i+rkptr->size])%q;
+            if(rkptr->t < 0) {
+                rkptr->t = (rkptr->t + q);
+            }
+        }
+    }
+    if()
+        for(int i = 0; i < rkptr->M; i++) {
+            if(results.size() != 0) {
+                for(int j = 0; j < results.size(); j++) {
+                    std::cout << "Pattern \"" << rkptr->pat << "\" in the input text at position " << results[j] << std::endl;
+                }
+            }
+            else {
+                std::cout << "Pattern \"" << rkptr->pat << "\" not found" << std::endl;
+            }
+            std::cout << std::endl;
+        }
+    return NULL;
+}
+
+
+int main() {
+    int M;
+    std::string text, pattern;
+    std::vector<std::string> patterns;
+    getline(std::cin, text);
+    std::cin >> M;
+    for(int i = 0; i < M; i++) {
+        std::cin >> pattern;
+        patterns.push_back(pattern);
+    }
+
+    struct rkvalues rkpats[M];
+    pthread_t tid[M];
+    pthread_mutex_t rkMutex;
+    pthread_cond_t condMutex;
+    pthread_mutex_init(&rkMutex, NULL);
+    pthread_cond_init(&condMutex, NULL);
+
+    std::cout << "SEARCH RESULTS: " << std::endl << std::endl;
+
+    for(int i = 0; i < M; i++) {
+        rkpats[i].h = ((int) pow(d,patterns[i].size()-1)) % q;
+        if(rkpats[i].h < 0) {
+            rkpats[i].h += q;
+        } 
+        rkpats[i].M = M;
+        rkpats[i].N = text.size();
+        rkpats[i].text = text;
+        rkpats[i].pat = patterns[i];
+        rkpats[i].turn = &i;
+        rkpats[i].mutex = &rkMutex;
+        rkpats[i].condM = &condMutex;
+        if(pthread_create(&tid[i], NULL, patSearch, &rkpats[i])) {
+            std::cout << "Error creating thread" << std::endl;
+            return 1;
+        }
+    }
+    for(int i = 0; i < M; i++) {
+        pthread_join(tid[i], NULL);
+    }
+
+    return 0;
+}
